@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件批量重命名工具</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header>
+        <h1> 文件批量重命名工具</h1>
+        <p>在浏览器端将文件批量重命名 - 安全、高效、无需上传服务器</p>
+        <div class="privacy-badge" style="cursor: pointer;" onclick="window.open('https://www.937788.xyz/','_blank')">
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>
+        <polyline points="15 3 21 3 21 9"/>
+        <line x1="10" y1="14" x2="21" y2="3"/>
+    </svg>
+    更多工具尽在忆痕发布页
+</div>
+    </header>
+
+    <div class="container">
+        <div class="main-grid">
+            <!-- 左侧：规则链 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span> 规则链</span>
+                    <div class="add-rule-menu">
+                        <button class="btn btn-primary btn-sm" onclick="toggleDropdown()">
+                            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="12" y1="5" x2="12" y2="19"/>
+                                <line x1="5" y1="12" x2="19" y2="12"/>
+                            </svg>
+                            添加规则
+                        </button>
+                        <div class="dropdown-menu" id="addRuleMenu">
+                            <div class="dropdown-item" onclick="addRule('replace')">
+                                <span></span> 查找替换
+                            </div>
+                            <div class="dropdown-item" onclick="addRule('regex')">
+                                <span></span> 正则表达式
+                            </div>
+                            <div class="dropdown-item" onclick="addRule('sequence')">
+                                <span></span> 序列号
+                            </div>
+                            <div class="dropdown-item" onclick="addRule('case')">
+                                <span></span> 大小写转换
+                            </div>
+                            <div class="dropdown-item" onclick="addRule('insert')">
+                                <span></span> 插入文本
+                            </div>
+                            <div class="dropdown-item" onclick="addRule('remove')">
+                                <span></span> 删除清理
+                            </div>
+                            <div class="dropdown-item" onclick="addRule('custom')">
+                                <span></span> 自定义 JS
+                            </div>
+                            <div class="dropdown-divider"></div>
+                            <div class="dropdown-item" onclick="addRule('clear')">
+                                <span></span> 清空文件名
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="panel-body">
+                    <div id="ruleList" class="rule-list">
+                        <div class="empty-state" id="emptyRules">
+                            <p>暂无规则，点击上方按钮添加</p>
+                        </div>
+                    </div>
+
+                    <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+                        <div style="font-weight: 600; margin-bottom: 12px;"> 预设</div>
+                        <div class="toolbar">
+                            <button class="btn btn-secondary btn-sm" onclick="savePreset()">保存当前</button>
+                            <button class="btn btn-secondary btn-sm" onclick="exportPresets()">导出</button>
+                            <button class="btn btn-secondary btn-sm" onclick="importPresets()">导入</button>
+                        </div>
+                        <div id="presetList" class="preset-list"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右侧：文件列表 -->
+            <div class="panel">
+                <div class="panel-header">
+                    <span> 文件列表</span>
+                    <div style="display: flex; gap: 8px;">
+                            <button class="btn btn-secondary btn-sm" onclick="clearFiles()">清空</button>
+                            <button class="btn btn-success btn-sm" onclick="applyRename()" id="applyBtn" disabled>
+                                应用重命名
+                            </button>
+                        </div>
+                </div>
+                <div class="panel-body">
+                    <div class="drop-zone" id="dropZone" onclick="selectFiles()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p><strong>点击选择文件夹</strong> 或拖拽文件到此处</p>
+                        <p style="font-size: 0.85rem; color: var(--text-secondary); margin-top: 8px;">
+                            支持 Chrome/Edge 最新版本
+                        </p>
+                    </div>
+
+                    <div class="conflict-warning" id="conflictWarning">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+                            <line x1="12" y1="9" x2="12" y2="13"/>
+                            <line x1="12" y1="17" x2="12.01" y2="17"/>
+                        </svg>
+                        <span id="conflictText">检测到文件名冲突</span>
+                    </div>
+
+                    <div class="file-hint" id="fileHint">
+                        <span></span> 若文件超过50个，建议用下面的「脚本导出」，双击就能跑
+                    </div>
+                    <div class="file-list" id="fileList" style="display: none;">
+                        <div class="file-item" style="font-weight: 600; background: var(--bg);">
+                            <div class="index">#</div>
+                            <div>原文件名</div>
+                            <div>新文件名</div>
+                            <div class="status">状态</div>
+                        </div>
+                        <div id="fileItems"></div>
+                    </div>
+                </div>
+                <div class="stats-bar">
+                    <div class="stat-item">
+                        <span></span>
+                        <span id="fileCount">0 个文件</span>
+                    </div>
+                    <div class="stat-item">
+                        <span></span>
+                        <span id="ruleCount">0 条规则</span>
+                    </div>
+                    <div class="stat-item">
+                        <span></span>
+                        <span id="conflictCount">0 个冲突</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 底部：导出脚本 -->
+        <div class="panel" style="margin-bottom: 40px;">
+            <div class="panel-header">
+                <span> 脚本导出</span>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn btn-secondary btn-sm" onclick="exportScript('bash')">Bash脚本</button>
+                    <button class="btn btn-secondary btn-sm" onclick="exportScript('powershell')">PowerShell</button>
+                </div>
+            </div>
+            <div class="panel-body">
+                <div class="script-guide">
+                    <h4>脚本怎么用？</h4>
+                    <ol>
+                        <li>点上面按钮生成命令，点「下载」保存脚本文件</li>
+                        <li>把下载的脚本文件<strong>拖到你要改名的那个文件夹里</strong></li>
+                        <li><strong>双击运行</strong>：
+                            <ul>
+                                <li>Mac/Linux：双击 <code>.sh</code> 文件，选「在终端中运行」</li>
+                                <li>Windows：右键 <code>.ps1</code> 文件 →「使用 PowerShell 运行」（或先拖进文件夹，再右键）</li>
+                            </ul>
+                        </li>
+                        <li>改完名后脚本文件自己删了就行</li>
+                    </ol>
+                    <p class="tip">提示：脚本不挑数量，一千个文件也秒完，不用把文件拖进浏览器</p>
+                </div>
+                <textarea id="scriptOutput" class="form-control" style="margin-top: 12px; min-height: 120px; font-family: monospace; background: #1e293b; color: #e2e8f0;" readonly placeholder="点击上方按钮生成脚本..."></textarea>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="fileInput" multiple webkitdirectory style="display: none;" onchange="handleFiles(this.files)">
+
+    <script src="app.js"></script>
+    <style>
+      .beian-bar{width:100%;background:#fff;padding:12px 0;text-align:center;font-size:14px;line-height:1.6;border-top:1px solid #eee}
+      .beian-pc{display:flex;justify-content:center;align-items:center;gap:20px}
+      .beian-disclaimer{color:#e74c3c;white-space:nowrap}
+      .beian-icp{color:#333;text-decoration:none;white-space:nowrap}
+      .beian-gongan{display:inline-flex;align-items:center;gap:6px;color:#333;text-decoration:none;white-space:nowrap}
+      .beian-gongan img{width:16px;height:16px}
+      @media(max-width:768px){.beian-pc{display:none}.beian-mobile{display:flex;flex-direction:column;align-items:center;gap:6px}.beian-mobile a,.beian-mobile span{display:block;line-height:1.8}}
+      @media(min-width:769px){.beian-mobile{display:none}}
+    </style>
+    <div class="beian-bar">
+      <div class="beian-pc">
+        <span class="beian-disclaimer">本站内容仅供学习和交流，非商业用途</span>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="beian-icp">浙ICP备2025187466号</a>
+        <a href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33030402001483" target="_blank" rel="noopener noreferrer" class="beian-gongan">
+          <img src="https://www.937788.xyz/gonganbeian.png" alt="公安备案" onerror="this.style.display='none'">
+          浙公网安备33030402001483号
+        </a>
+      </div>
+      <div class="beian-mobile">
+        <span class="beian-disclaimer">本站内容仅供学习和交流，非商业用途</span>
+        <a href="https://beian.miit.gov.cn/" target="_blank" rel="noopener noreferrer" class="beian-icp">浙ICP备2025187466号</a>
+        <a href="https://www.beian.gov.cn/portal/registerSystemInfo?recordcode=33030402001483" target="_blank" rel="noopener noreferrer" class="beian-gongan">
+          <img src="https://www.937788.xyz/gonganbeian.png" alt="公安备案" onerror="this.style.display='none'">
+          浙公网安备33030402001483号
+        </a>
+      </div>
+    </div>
+
+  </body>
+</html>
+</body>
+</html>
